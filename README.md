@@ -90,4 +90,6 @@ Tested and working on iOS 8.0+ and Xcode 7.0 b5
 
 That's all folks!
 
-
+## License
+This repository is licensed under the MIT license, more under
+[LICENSE](LICENSE).
