@@ -5,16 +5,17 @@
 [![License](http://img.shields.io/badge/license-MIT-lightgrey.svg?style=flat
 )](http://mit-license.org)
 
-# PullDownMenu
-Animated drop down menu written in Swift 2.0
-
 ![Screenshot](https://github.com/sspux/PullDownMenu/blob/master/phonescreen.png)
 
 **Please ★ this library if you like it!*
 
-## Credits ##
+# PullDownMenu
+PDMenu is a reimplementation of Edo-Osagie's [DDMenu](https://github.com/oduwa/DropDownMenu) in
+Swift. A iOS 8/9 pulldown menu. 
 
-Inspired by Odie Edo-Osagie's [DDMenu](https://github.com/oduwa/DropDownMenu).
+###Requirements
+
+PDMenu requires `Swift 2.0`, `XCode 7.0b5` and `iOS 8`.
 
 ##Installation##
 
@@ -96,6 +97,13 @@ topRightUtilityButtonBlock
 Tested and working on iOS 8.0+ and Xcode 7.0 b5
 
 That's all folks!
+
+#Author
+
+HeikoG
+
+[oduwa/DropDownMenu](https://github.com/oduwa/DropDownMenu) was
+authored by Odie Edo-Osagie
 
 ## License
 This repository is licensed under the MIT license, more under
