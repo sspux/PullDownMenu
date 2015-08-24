@@ -17,7 +17,7 @@ let kHeaderHeight       : CGFloat = 130
 let kNumberOfItemsInRow : CGFloat = 3
 let kVelocityTreshold   : CGFloat = 1000
 let kAutocloseVelocity  : CGFloat = 1200
-let kMenu_Item_Default_Fontname : String  = "HelveticaNeue-Light"
+let kMenu_Item_Default_Fontname : String  = "Helvetica-Light"
 let kMenu_Item_Default_Fontsize : CGFloat = 25
 let kMenuBounceOffset   : CGFloat = 3
 let kBorderColor : UIColor = UIColor.darkGrayColor()
@@ -38,7 +38,7 @@ class PDMenuItem: NSObject {
     private var completion : () -> Bool
     
     init (title:String, completion:()->Bool) {
-        self.title = title;
+        self.title = NSLocalizedString(title, value: title, comment: title)
         self.completion = completion
     }
     
@@ -139,7 +139,7 @@ class PDMenuCollectionViewCell : UICollectionViewCell {
     
     override init(frame: CGRect) {
         super.init(frame: frame)
-        let imageSize = frame.size.width * 0.5
+        let imageSize = frame.size.height * 0.5
         self.imageView = UIImageView(frame: CGRectMake(0, 0, imageSize, imageSize))
         self.imageView.center = CGPointMake(frame.size.width/2, frame.size.height/2.5)
         self.addSubview(self.imageView)
@@ -148,7 +148,8 @@ class PDMenuCollectionViewCell : UICollectionViewCell {
         let imageBottomY = (self.imageView.frame.origin.y + self.imageView.frame.size.height);
         let xOffset : CGFloat = 5.0;
         let yOffset : CGFloat = 2.0;
-        self.titleLabel = UILabel(frame: CGRectMake(xOffset, imageBottomY+yOffset, frame.size.width-(xOffset*2), spaceBelowImage*0.5))
+        self.titleLabel = UILabel(frame: CGRectMake(xOffset, imageBottomY+yOffset, frame.size.width-(xOffset*2), spaceBelowImage))
+        self.titleLabel.numberOfLines = 0
         self.titleLabel.textAlignment = NSTextAlignment.Center
         self.addSubview(self.titleLabel)
     }
@@ -178,12 +179,12 @@ extension PDMenu: UICollectionViewDelegate, UICollectionViewDataSource {
         let menuItem = self.menuItems[indexPath.row] as PDMenuItem
         menuCell.titleLabel.text = menuItem.title
         menuCell.titleLabel.textColor = self.textColor
-        menuCell.titleLabel.font = UIFont.systemFontOfSize(10.0)
+        menuCell.titleLabel.font = UIFont(name: kMenu_Item_Default_Fontname, size: 10)
         menuCell.imageView.image = menuItem.icon
         
         if self.highLighedIndex == indexPath.row {
             menuCell.titleLabel.textColor = self.highLightTextColor
-            menuCell.titleLabel.font = UIFont.systemFontOfSize(13.0)
+            menuCell.titleLabel.font = UIFont(name: kMenu_Item_Default_Fontname, size: 13)
             menuCell.backgroundColor = kSelectedMenuItemColour
         }
         
@@ -276,6 +277,7 @@ class PDMenu: UIView {
     }
  
     func setupView() {
+        
         self.topRightUtilityView.removeFromSuperview()
         if let _ = self.menuContentCollectionView {
            self.menuContentCollectionView.removeFromSuperview()
@@ -287,6 +289,7 @@ class PDMenu: UIView {
         }
         
         self.collectionHeight = (UIScreen.mainScreen().bounds.width / numberOfItemsInRow)
+
         if self.collectionHeight > 130 { self.collectionHeight = 130 }
         self.menuHeight = kHeaderHeight + collectionHeight
         self.frame = CGRectMake(0, 0, UIScreen.mainScreen().bounds.width, self.menuHeight)
@@ -317,7 +320,7 @@ class PDMenu: UIView {
             }
         }
         
-        self.headerImageView.contentMode = UIViewContentMode.ScaleAspectFill
+        self.headerImageView.contentMode = UIViewContentMode.ScaleAspectFit
         self.addSubview(headerImageView)
 
         //setup ProfilImage
@@ -337,7 +340,7 @@ class PDMenu: UIView {
         self.profileLabel.removeFromSuperview()
         let xOffset : CGFloat = 5.0
         let yOffset : CGFloat = 2.0
-        let imageBottomY : CGFloat = (profileImageView.frame.origin.y + profileImageView.frame.size.height) ;
+        let imageBottomY : CGFloat = (profileImageView.frame.origin.y + profileImageView.frame.size.height)
         self.profileLabel = UILabel(frame: CGRectMake(xOffset, imageBottomY+yOffset, UIScreen.mainScreen().bounds.size.width-(xOffset*2), 21))
         self.profileLabel.textColor = UIColor.whiteColor()
         self.profileLabel.text = tempTxt
@@ -362,6 +365,10 @@ class PDMenu: UIView {
         self.menuContentCollectionView.delegate = self
         self.menuContentCollectionView.dataSource = self
         self.menuContentCollectionView.showsVerticalScrollIndicator = false
+        self.menuContentCollectionView.directionalLockEnabled = true
+        self.menuContentCollectionView.bounces = true
+        self.menuContentCollectionView.alwaysBounceVertical = true
+        self.menuContentCollectionView.alwaysBounceHorizontal = false
         self.menuContentCollectionView.backgroundColor = self.backgroundColor
         self.menuContentCollectionView.allowsMultipleSelection = false
         self.menuContentCollectionView.registerClass(PDMenuCollectionViewCell.classForCoder(), forCellWithReuseIdentifier: kCellidentifier)
@@ -407,6 +414,7 @@ class PDMenu: UIView {
         self.contentController.view.frame = CGRectMake(0, 0, CGRectGetWidth(UIScreen.mainScreen().bounds), CGRectGetHeight(UIScreen.mainScreen().bounds));
         self.setShadowProperties()
         self.menuContentTable = UITableView(frame: self.frame)
+        setupView()
     }
    
     func showMenu() {
