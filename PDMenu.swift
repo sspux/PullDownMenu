@@ -4,7 +4,6 @@
 //  Created by Heiko Grau on 19.08.15.
 //  Copyright © 2015 HeikoG. All rights reserved.
 //
-
 import UIKit
 import QuartzCore
 
@@ -14,17 +13,14 @@ let kBlurHeaderEnable   = true
 let kStartIndex         : Int = 0
 let kCellidentifier     = "menubutton"
 let kHeaderHeight       : CGFloat = 130
-let kNumberOfItemsInRow : CGFloat = 3
+let kNumberOfItemsInRow : CGFloat = 10
 let kVelocityTreshold   : CGFloat = 1000
 let kAutocloseVelocity  : CGFloat = 1200
-let kMenu_Item_Default_Fontname : String  = "Helvetica-Light"
-let kMenu_Item_Default_Fontsize : CGFloat = 25
+let kMenu_Item_Default_Fontname : String  = "Helvetica"
+let kMenu_Item_Default_Fontsize : CGFloat = 0 // FontSize --> 0 = automatic from size
 let kMenuBounceOffset   : CGFloat = 3
 let kBorderColor : UIColor = UIColor.darkGrayColor()
-let kSelectedMenuItemColour : UIColor = UIColor.darkGrayColor()
-
-
-
+let kSelectedMenuItemColour : UIColor = UIColor.blueColor()
 
 enum PDMenuState : Int {
     case PDMenuShownState = 0
@@ -43,13 +39,12 @@ class PDMenuItem: NSObject {
     }
     
     init(title:String, iconImage:UIImage, completion:()->Bool) {
-        self.title = title;
-        self.icon = iconImage;
+        self.title = NSLocalizedString(title, value: title, comment: title)
+        self.icon = iconImage
         self.completion = completion
     }
 }
-
-class PDCollectionViewLayout : UICollectionViewLayout {
+private class PDCollectionViewLayout : UICollectionViewLayout {
     private var itemOffset : UIOffset!
     
     private var itemAttributes = [UICollectionViewLayoutAttributes]()
@@ -132,8 +127,7 @@ class PDCollectionViewLayout : UICollectionViewLayout {
         return true
     }
 }
-
-class PDMenuCollectionViewCell : UICollectionViewCell {
+private class PDMenuCollectionViewCell : UICollectionViewCell {
     private var imageView : UIImageView!
     private var titleLabel : UILabel!
     
@@ -142,6 +136,7 @@ class PDMenuCollectionViewCell : UICollectionViewCell {
         let imageSize = frame.size.height * 0.5
         self.imageView = UIImageView(frame: CGRectMake(0, 0, imageSize, imageSize))
         self.imageView.center = CGPointMake(frame.size.width/2, frame.size.height/2.5)
+        self.imageView.contentMode = UIViewContentMode.ScaleAspectFit
         self.addSubview(self.imageView)
 
         let spaceBelowImage = frame.size.height - (self.imageView.frame.origin.y + self.imageView.frame.size.height);
@@ -179,12 +174,19 @@ extension PDMenu: UICollectionViewDelegate, UICollectionViewDataSource {
         let menuItem = self.menuItems[indexPath.row] as PDMenuItem
         menuCell.titleLabel.text = menuItem.title
         menuCell.titleLabel.textColor = self.textColor
-        menuCell.titleLabel.font = UIFont(name: kMenu_Item_Default_Fontname, size: 10)
+        let fontSize : CGFloat = {
+            if kMenu_Item_Default_Fontsize == 0 {
+                return menuCell.frame.size.width / 8
+            } else {
+                return kMenu_Item_Default_Fontsize
+            }
+        }()
+        menuCell.titleLabel.font = UIFont(name: kMenu_Item_Default_Fontname, size: fontSize)
         menuCell.imageView.image = menuItem.icon
         
         if self.highLighedIndex == indexPath.row {
             menuCell.titleLabel.textColor = self.highLightTextColor
-            menuCell.titleLabel.font = UIFont(name: kMenu_Item_Default_Fontname, size: 13)
+            menuCell.titleLabel.font = UIFont(name: kMenu_Item_Default_Fontname, size: fontSize+3)
             menuCell.backgroundColor = kSelectedMenuItemColour
         }
         
@@ -216,22 +218,25 @@ class PDMenu: UIView {
     private var highLightTextColor : UIColor = UIColor.blackColor()
     private var titleFont : UIFont!
     private var topRightUtilityView = UIImageView()
-    var topRightUtilityButtonBlock: () -> () = {}
+    var topRightUtilityButtonBlock: (() -> ())!
     
     var borderWidth : CGFloat = 1.0
     var headerImage : UIImage?
     private var headerImageView = UIImageView()
+    
     var profileImageView = UIImageView()
     var profileLabel = UILabel()
     var hidesBorder : Bool = true
 
+    
+    
     override init(frame: CGRect) {
         super.init(frame: frame)
     }
     
     init(menuItems:[PDMenuItem], _textColor: UIColor, _highLightTextColor: UIColor, _backgroundColor: UIColor, forViewController _viewController:UIViewController) {
         super.init(frame: CGRectMake(0, 0, UIScreen.mainScreen().bounds.width, 999))
-        
+        self
         self.borderWidth = 1.0
         self.menuItems = menuItems
         self.textColor = _textColor
@@ -252,8 +257,10 @@ class PDMenu: UIView {
         let window = UIApplication.sharedApplication().delegate!.window
         window??.rootViewController = menuController
         window??.addSubview(self.contentController!.view)
+        if UIDevice.currentDevice().userInterfaceIdiom == UIUserInterfaceIdiom.Pad {
+            NSNotificationCenter.defaultCenter().addObserver(self, selector: "setupView", name: UIDeviceOrientationDidChangeNotification, object: nil)
+        }
         
-        NSNotificationCenter.defaultCenter().addObserver(self, selector: "setupView", name: UIDeviceOrientationDidChangeNotification, object: nil)
         
         UIGraphicsBeginImageContextWithOptions(CGSizeMake(22, 22), false, 0)
         self.drawMenuButton()
@@ -264,6 +271,8 @@ class PDMenu: UIView {
         self.drawInfoButton()
         Cache.imageOfInfoButton = UIGraphicsGetImageFromCurrentImageContext()!
         UIGraphicsEndImageContext()
+        
+        self.highLighedIndex = kStartIndex
         
         self.setupView()
     }
@@ -277,29 +286,28 @@ class PDMenu: UIView {
     }
  
     func setupView() {
-        
         self.topRightUtilityView.removeFromSuperview()
         if let _ = self.menuContentCollectionView {
-           self.menuContentCollectionView.removeFromSuperview()
+            self.menuContentCollectionView.removeFromSuperview()
         }
-
+        
         var numberOfItemsInRow = kNumberOfItemsInRow
         if numberOfItemsInRow > CGFloat(menuItems.count) {
             numberOfItemsInRow = CGFloat(menuItems.count)
         }
         
         self.collectionHeight = (UIScreen.mainScreen().bounds.width / numberOfItemsInRow)
-
+        
         if self.collectionHeight > 130 { self.collectionHeight = 130 }
         self.menuHeight = kHeaderHeight + collectionHeight
         self.frame = CGRectMake(0, 0, UIScreen.mainScreen().bounds.width, self.menuHeight)
         
-        self.highLighedIndex = kStartIndex
+        
         self.currentMenuState = .PDMenuClosedState
         if let _font = UIFont(name: kMenu_Item_Default_Fontname, size: kMenu_Item_Default_Fontsize) {
             self.titleFont = _font
         }
-
+        
         if let _ = self.contentController?.navigationController {
             self.contentController = self.contentController?.navigationController
         }
@@ -310,55 +318,63 @@ class PDMenu: UIView {
         self.headerImageView.backgroundColor = self.backgroundColor
         self.headerImageView.layer.masksToBounds = true
         self.headerImageView.image = headerImage
-        if kBlurHeaderEnable {
-            if let _ = headerImage?.size {
+        if kBlurHeaderEnable, let _ = headerImage?.size {
                 let effect =  UIBlurEffect(style: UIBlurEffectStyle.Light)
                 let effectView  = UIVisualEffectView(effect: effect)
                 effectView.frame  = self.headerImageView.frame
                 self.headerImageView.addSubview(effectView)
-                
-            }
         }
-        
         self.headerImageView.contentMode = UIViewContentMode.ScaleAspectFit
         self.addSubview(headerImageView)
-
+        
+        
         //setup ProfilImage
-        var tempImage = self.profileImageView.image
-        self.profileImageView.removeFromSuperview()
-        self.profileImageView = UIImageView(frame: CGRectMake(0, 0, headerImageView.frame.size.height/2, headerImageView.frame.size.height/2))
-        self.profileImageView.center = CGPointMake(headerImageView.center.x, headerImageView.center.y);
-        self.profileImageView.image = tempImage
-        if let _ = tempImage?.size {
-            self.roundImageView(self.profileImageView)
+        if profileImageView.image != nil {
+            var tempImage = self.profileImageView.image
+            self.profileImageView.removeFromSuperview()
+            self.profileImageView = UIImageView(frame: CGRectMake(0, 0, headerImageView.frame.size.height/2, headerImageView.frame.size.height/2))
+            self.profileImageView.center = CGPointMake(headerImageView.center.x, headerImageView.center.y);
+            self.profileImageView.contentScaleFactor = 1.5
+            self.profileImageView.image = tempImage
+            
+            if let _ = tempImage?.size {
+                self.roundImageView(self.profileImageView)
+            }
+            self.addSubview(self.profileImageView)
+            tempImage = nil
         }
-        self.addSubview(self.profileImageView)
-        tempImage = nil
         
         //setup ProfilLabel
-        var tempTxt = self.profileLabel.text
-        self.profileLabel.removeFromSuperview()
-        let xOffset : CGFloat = 5.0
-        let yOffset : CGFloat = 2.0
-        let imageBottomY : CGFloat = (profileImageView.frame.origin.y + profileImageView.frame.size.height)
-        self.profileLabel = UILabel(frame: CGRectMake(xOffset, imageBottomY+yOffset, UIScreen.mainScreen().bounds.size.width-(xOffset*2), 21))
-        self.profileLabel.textColor = UIColor.whiteColor()
-        self.profileLabel.text = tempTxt
-        self.profileLabel.textAlignment = NSTextAlignment.Center
-        self.addSubview(self.profileLabel)
-        tempTxt = nil
-        
+        if profileLabel.text != nil {
+            var tempTxt = self.profileLabel.text
+            self.profileLabel.removeFromSuperview()
+            let xOffset : CGFloat = 5.0
+            let yOffset : CGFloat = 2.0
+            var imageBottomY : CGFloat = (profileImageView.frame.origin.y + profileImageView.frame.size.height)
+            if imageBottomY == 0.0 {
+                imageBottomY = (self.headerImageView.frame.height / 2) - 5.0
+            }
+            self.profileLabel = UILabel(frame: CGRectMake(xOffset, imageBottomY+yOffset, UIScreen.mainScreen().bounds.size.width-(xOffset*2), 21))
+            self.profileLabel.textColor = UIColor.whiteColor()
+            self.profileLabel.text = tempTxt
+            self.profileLabel.textAlignment = NSTextAlignment.Center
+            self.addSubview(self.profileLabel)
+            tempTxt = nil
+        }
+
         //setup InfoButton
-        let buttonSize : CGFloat = 22;
-        self.topRightUtilityView = UIImageView(frame: CGRectMake(UIScreen.mainScreen().bounds.size.width-buttonSize-xOffset, UIApplication.sharedApplication().statusBarFrame.size.height+2, buttonSize, buttonSize))
-        topRightUtilityView.image = infoButton()
-        let tap = UITapGestureRecognizer(target: self, action: "rightUtilityPressed:")
-        topRightUtilityView.addGestureRecognizer(tap)
-        self.addSubview(topRightUtilityView)
-        topRightUtilityView.image = topRightUtilityView.image?.imageWithRenderingMode(UIImageRenderingMode.AlwaysTemplate)
-        topRightUtilityView.tintColor = self.highLightTextColor
-        topRightUtilityView.userInteractionEnabled = true
-        
+        if topRightUtilityButtonBlock != nil {
+            let buttonSize : CGFloat = 22;
+            self.topRightUtilityView = UIImageView(frame: CGRectMake(UIScreen.mainScreen().bounds.size.width-buttonSize-5, UIApplication.sharedApplication().statusBarFrame.size.height+2, buttonSize, buttonSize))
+            topRightUtilityView.image = infoButton()
+            let tap = UITapGestureRecognizer(target: self, action: "rightUtilityPressed:")
+            topRightUtilityView.addGestureRecognizer(tap)
+            self.addSubview(topRightUtilityView)
+            topRightUtilityView.image = topRightUtilityView.image?.imageWithRenderingMode(UIImageRenderingMode.AlwaysTemplate)
+            topRightUtilityView.tintColor = self.highLightTextColor
+            topRightUtilityView.userInteractionEnabled = true
+        }
+
         //setup CollectionView
         let layout = PDCollectionViewLayout()
         self.menuContentCollectionView = UICollectionView(frame: CGRectMake(0, kHeaderHeight, CGRectGetWidth(UIScreen.mainScreen().bounds), collectionHeight), collectionViewLayout:layout)
@@ -366,6 +382,7 @@ class PDMenu: UIView {
         self.menuContentCollectionView.dataSource = self
         self.menuContentCollectionView.showsVerticalScrollIndicator = false
         self.menuContentCollectionView.directionalLockEnabled = true
+        self.menuContentCollectionView.scrollsToTop = false
         self.menuContentCollectionView.bounces = true
         self.menuContentCollectionView.alwaysBounceVertical = true
         self.menuContentCollectionView.alwaysBounceHorizontal = false
@@ -421,7 +438,6 @@ class PDMenu: UIView {
         if(self.currentMenuState == .PDMenuShownState || self.currentMenuState == .PDMenuDisplayingState){
             if(self.currentMenuState == .PDMenuShownState || self.currentMenuState == .PDMenuDisplayingState) {
                     self.animateMenuClosingWithCompletion({ (finished) -> () in
-                        
                     })
             }
         }
@@ -541,32 +557,19 @@ class PDMenu: UIView {
     
     private func drawMenuButton() {
         let fillColor = UIColor(red: 0.000, green: 0.000, blue: 0.000, alpha: 1.000)
-        
-        //// menu.svg Group
-        //// Rectangle Drawing
         let rectanglePath = UIBezierPath(roundedRect: CGRectMake(2, 16, 18, 2), cornerRadius: 2)
         fillColor.setFill()
         rectanglePath.fill()
-        
-        
-        //// Rectangle 2 Drawing
         let rectangle2Path = UIBezierPath(roundedRect: CGRectMake(2, 9, 18, 2), cornerRadius: 2)
         fillColor.setFill()
         rectangle2Path.fill()
-        
-        
-        //// Rectangle 3 Drawing
         let rectangle3Path = UIBezierPath(roundedRect: CGRectMake(2, 2, 18, 2), cornerRadius: 2)
         fillColor.setFill()
         rectangle3Path.fill()
     }
     
     private func drawInfoButton() {
-        //// Color Declarations
         let fillColor = UIColor(red: 0.000, green: 0.000, blue: 0.000, alpha: 1.000)
-        
-        //// Group 2
-        //// Bezier Drawing
         let bezierPath = UIBezierPath()
         bezierPath.moveToPoint(CGPointMake(12.84, 16.53))
         bezierPath.addCurveToPoint(CGPointMake(11.8, 16.71), controlPoint1: CGPointMake(12.83, 16.53), controlPoint2: CGPointMake(12.28, 16.71))
@@ -591,12 +594,8 @@ class PDMenu: UIView {
         bezierPath.addCurveToPoint(CGPointMake(12.84, 16.53), controlPoint1: CGPointMake(13.31, 16.54), controlPoint2: CGPointMake(13.06, 16.45))
         bezierPath.closePath()
         bezierPath.miterLimit = 4;
-        
         fillColor.setFill()
         bezierPath.fill()
-        
-        
-        //// Oval Drawing
         let ovalPath = UIBezierPath(ovalInRect: CGRectMake(9.5, 2.5, 5, 5))
         fillColor.setFill()
         ovalPath.fill()
