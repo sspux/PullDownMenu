@@ -15,7 +15,7 @@ Swift. A iOS 8/9 pulldown menu.
 
 ###Requirements
 
-PDMenu requires `Swift 2.0`, `XCode 7.01` and `iOS 8`.
+PDMenu requires `Swift 2.0`, `Xcode 7.01` and `iOS 8`.
 
 ##Installation##
 
