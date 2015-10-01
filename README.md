@@ -15,7 +15,7 @@ Swift. A iOS 8/9 pulldown menu.
 
 ###Requirements
 
-PDMenu requires `Swift 2.0`, `XCode 7.0b5` and `iOS 8`.
+PDMenu requires `Swift 2.0`, `XCode 7.01` and `iOS 8`.
 
 ##Installation##
 
@@ -94,7 +94,7 @@ topRightUtilityButtonBlock
 
 ## Compatability ##
 
-Tested and working on iOS 8.0+ and Xcode 7.0 b5
+Tested and working on iOS 8.0+ and Xcode 7.01
 
 That's all folks!
 
